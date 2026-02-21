@@ -20,20 +20,17 @@
 
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; display: flex; overflow: hidden; }
         
-        /* The Sidebar */
         .sidebar { width: 420px; height: 100vh; padding: 40px 35px; background: var(--panel); box-shadow: 4px 0 20px rgba(0,0,0,0.6); z-index: 1000; box-sizing: border-box; overflow-y: auto; }
         
         h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 600; margin: 0 0 5px 0; line-height: 1.1; }
         .byline { font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; font-weight: 600; }
         
-        /* Species Header */
         .species-header { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #30363d; }
         .species-header h2 { font-family: 'Inter', sans-serif; font-size: 1.6rem; font-weight: 600; margin: 0 0 2px 0; color: #fff; }
         .species-header .scientific { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.1rem; color: var(--text-dim); }
 
         .prose { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 25px; }
         
-        /* Methodology Box */
         .methodology { background: var(--box-bg); padding: 18px; border-radius: 6px; border-left: 3px solid var(--accent); margin-bottom: 35px; }
         .methodology-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-main); font-weight: 600; margin-bottom: 8px; }
         .methodology-text { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 10px; }
@@ -41,7 +38,6 @@
         .citation a { color: var(--accent); text-decoration: none; }
         .citation a:hover { text-decoration: underline; }
 
-        /* Controls */
         .control-group { margin-bottom: 25px; }
         label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         select { width: 100%; padding: 10px; background: var(--bg); color: var(--text-main); border: 1px solid #30363d; border-radius: 4px; font-family: inherit; font-size: 1rem; outline: none; cursor: pointer; }
@@ -49,12 +45,10 @@
         #date-display { display: block; font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--text-main); margin-top: 5px; }
         input[type=range] { width: 100%; margin-top: 15px; accent-color: var(--accent); cursor: pointer; }
 
-        /* Legend */
         .legend-container { margin-top: 35px; padding-top: 25px; border-top: 1px solid #30363d; }
         .legend-bar { height: 12px; border-radius: 6px; background: linear-gradient(to right, #0d0887, #7e03a8, #cc4678, #f89441, #f0f921); border: 1px solid #30363d; margin-bottom: 8px; }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); font-family: monospace; }
 
-        /* The Map */
         #map { width: calc(100vw - 420px); height: 100vh; background: #0b0d12; z-index: 1; }
         
         .leaflet-tooltip { background: var(--panel); color: var(--text-main); border: 1px solid #30363d; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 4px; font-family: 'Inter'; }
@@ -68,8 +62,8 @@
         <div class="byline">Spatial Migration in Slovakia</div>
         
         <div class="species-header">
-            <h2>Barn Swallow</h2>
-            <div class="scientific">Hirundo rustica</div>
+            <h2 id="display-species-name">Loading...</h2>
+            <div class="scientific" id="display-scientific-name">Loading...</div>
         </div>
         
         <div class="prose">
@@ -86,6 +80,11 @@
             <div class="citation">
                 Ref: Johnston, A., et al. (2021). Analytical guidelines to increase the value of community science data: An example using eBird data to estimate species distributions. <em>Diversity and Distributions</em>. <a href="https://doi.org/10.1111/ddi.13271" target="_blank">DOI: 10.1111/ddi.13271</a>
             </div>
+        </div>
+
+        <div class="control-group">
+            <label>Select Species</label>
+            <select id="species-select"></select>
         </div>
 
         <div class="control-group">
@@ -124,7 +123,8 @@
 
         setTimeout(() => { map.invalidateSize(); }, 200);
 
-        let allArrivals = [];
+        // Global master variables
+        let fullDatabase = {};
         let currentMarkers = [];
         const colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([90, 180]);
 
@@ -133,46 +133,80 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
         }
 
+        // Fetch the new combined JSON file
         Promise.all([
             fetch('slovakia.geojson').then(r => r.json()),
-            fetch('swallow_arrivals.json').then(r => r.json())
-        ]).then(([geoData, arrivalData]) => {
+            fetch('multi_species_arrivals.json').then(r => r.json())
+        ]).then(([geoData, multiSpeciesData]) => {
             
             L.geoJSON(geoData, {
                 style: { color: '#64ffda', weight: 2.5, fillOpacity: 0, opacity: 0.8 }
             }).addTo(map);
 
-            allArrivals = arrivalData;
+            fullDatabase = multiSpeciesData;
 
-            const years = [...new Set(allArrivals.map(d => d.year))].sort();
-            const select = document.getElementById('year-select');
-            years.forEach(yr => {
+            // 1. Populate the SPECIES dropdown
+            const speciesNames = Object.keys(fullDatabase).sort();
+            const speciesSelect = document.getElementById('species-select');
+            speciesNames.forEach(sp => {
                 let opt = document.createElement('option');
-                opt.value = yr;
-                opt.innerHTML = yr;
-                select.appendChild(opt);
+                opt.value = sp;
+                opt.innerHTML = sp;
+                speciesSelect.appendChild(opt);
             });
 
-            select.addEventListener('change', (e) => loadYearData(parseInt(e.target.value)));
+            // Set up species change listener
+            speciesSelect.addEventListener('change', (e) => loadSpecies(e.target.value));
+
+            // Set up year change listener
+            const yearSelect = document.getElementById('year-select');
+            yearSelect.addEventListener('change', (e) => loadYearData(speciesSelect.value, parseInt(e.target.value)));
             
+            // Set up slider listener
             const slider = document.getElementById('doy-slider');
             slider.addEventListener('input', (e) => {
                 document.getElementById('date-display').innerText = doyToDateStr(e.target.value);
                 updateMarkers(parseInt(e.target.value));
             });
 
-            loadYearData(years[0]);
+            // Initialize the map with the first species in the list
+            loadSpecies(speciesNames[0]);
             
         }).catch(error => {
             console.error("DATA ERROR:", error);
             alert("Error loading map data: " + error.message);
         });
 
-        function loadYearData(year) {
+        // This function sets up the dashboard for a newly selected species
+        function loadSpecies(speciesName) {
+            const speciesProfile = fullDatabase[speciesName];
+            
+            // Update Headers dynamically
+            document.getElementById('display-species-name').innerText = speciesName;
+            document.getElementById('display-scientific-name').innerText = speciesProfile.scientific;
+
+            // Update Year Dropdown dynamically (different birds might have different years of data)
+            const yearSelect = document.getElementById('year-select');
+            yearSelect.innerHTML = ""; // Clear old years
+            
+            const availableYears = [...new Set(speciesProfile.data.map(d => d.year))].sort();
+            availableYears.forEach(yr => {
+                let opt = document.createElement('option');
+                opt.value = yr;
+                opt.innerHTML = yr;
+                yearSelect.appendChild(opt);
+            });
+
+            // Load the first available year for this new species
+            loadYearData(speciesName, availableYears[0]);
+        }
+
+        function loadYearData(speciesName, year) {
             currentMarkers.forEach(m => map.removeLayer(m.marker));
             currentMarkers = [];
 
-            const yearData = allArrivals.filter(d => d.year === year);
+            // Filter the master database for the specific species AND the specific year
+            const yearData = fullDatabase[speciesName].data.filter(d => d.year === year);
             
             yearData.forEach(d => {
                 let marker = L.circleMarker([d.lat, d.lon], {
