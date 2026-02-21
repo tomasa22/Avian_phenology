@@ -20,6 +20,7 @@
 
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; display: flex; overflow: hidden; }
         
+        /* The Sidebar (Desktop Default) */
         .sidebar { width: 420px; height: 100vh; padding: 40px 35px; background: var(--panel); box-shadow: 4px 0 20px rgba(0,0,0,0.6); z-index: 1000; box-sizing: border-box; overflow-y: auto; }
         
         h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 600; margin: 0 0 5px 0; line-height: 1.1; }
@@ -49,10 +50,34 @@
         .legend-bar { height: 12px; border-radius: 6px; background: linear-gradient(to right, #0d0887, #7e03a8, #cc4678, #f89441, #f0f921); border: 1px solid #30363d; margin-bottom: 8px; }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); font-family: monospace; }
 
+        /* The Map (Desktop Default) */
         #map { width: calc(100vw - 420px); height: 100vh; background: #0b0d12; z-index: 1; }
         
         .leaflet-tooltip { background: var(--panel); color: var(--text-main); border: 1px solid #30363d; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 4px; font-family: 'Inter'; }
         .leaflet-tooltip-top:before { border-top-color: #30363d; }
+
+        /* --- MOBILE OVERRIDES (Screens smaller than 800px) --- */
+        @media (max-width: 800px) {
+            body, html { flex-direction: column; } /* Stacks elements vertically */
+            
+            #map { 
+                width: 100vw; 
+                height: 50vh; /* Map takes top half */
+                order: 1;     /* Forces map to the top */
+            }
+            
+            .sidebar { 
+                width: 100vw; 
+                height: 50vh; /* Sidebar takes bottom half */
+                padding: 25px 20px; 
+                order: 2;     /* Forces sidebar to the bottom */
+                border-top: 2px solid var(--accent);
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            }
+
+            h1 { font-size: 1.8rem; }
+            .legend-labels span { font-size: 0.75rem; white-space: nowrap; } /* Fixes cut-off dates */
+        }
     </style>
 </head>
 <body>
@@ -121,9 +146,9 @@
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         }).addTo(map);
 
+        // Tell the map to recalculate its size in case the screen was split
         setTimeout(() => { map.invalidateSize(); }, 200);
 
-        // Global master variables
         let fullDatabase = {};
         let currentMarkers = [];
         const colorScale = d3.scaleSequential(d3.interpolatePlasma).domain([90, 180]);
@@ -133,7 +158,6 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
         }
 
-        // Fetch the new combined JSON file
         Promise.all([
             fetch('slovakia.geojson').then(r => r.json()),
             fetch('multi_species_arrivals.json').then(r => r.json())
@@ -145,7 +169,6 @@
 
             fullDatabase = multiSpeciesData;
 
-            // 1. Populate the SPECIES dropdown
             const speciesNames = Object.keys(fullDatabase).sort();
             const speciesSelect = document.getElementById('species-select');
             speciesNames.forEach(sp => {
@@ -155,21 +178,17 @@
                 speciesSelect.appendChild(opt);
             });
 
-            // Set up species change listener
             speciesSelect.addEventListener('change', (e) => loadSpecies(e.target.value));
 
-            // Set up year change listener
             const yearSelect = document.getElementById('year-select');
             yearSelect.addEventListener('change', (e) => loadYearData(speciesSelect.value, parseInt(e.target.value)));
             
-            // Set up slider listener
             const slider = document.getElementById('doy-slider');
             slider.addEventListener('input', (e) => {
                 document.getElementById('date-display').innerText = doyToDateStr(e.target.value);
                 updateMarkers(parseInt(e.target.value));
             });
 
-            // Initialize the map with the first species in the list
             loadSpecies(speciesNames[0]);
             
         }).catch(error => {
@@ -177,17 +196,14 @@
             alert("Error loading map data: " + error.message);
         });
 
-        // This function sets up the dashboard for a newly selected species
         function loadSpecies(speciesName) {
             const speciesProfile = fullDatabase[speciesName];
             
-            // Update Headers dynamically
             document.getElementById('display-species-name').innerText = speciesName;
             document.getElementById('display-scientific-name').innerText = speciesProfile.scientific;
 
-            // Update Year Dropdown dynamically (different birds might have different years of data)
             const yearSelect = document.getElementById('year-select');
-            yearSelect.innerHTML = ""; // Clear old years
+            yearSelect.innerHTML = ""; 
             
             const availableYears = [...new Set(speciesProfile.data.map(d => d.year))].sort();
             availableYears.forEach(yr => {
@@ -197,7 +213,6 @@
                 yearSelect.appendChild(opt);
             });
 
-            // Load the first available year for this new species
             loadYearData(speciesName, availableYears[0]);
         }
 
@@ -205,7 +220,6 @@
             currentMarkers.forEach(m => map.removeLayer(m.marker));
             currentMarkers = [];
 
-            // Filter the master database for the specific species AND the specific year
             const yearData = fullDatabase[speciesName].data.filter(d => d.year === year);
             
             yearData.forEach(d => {
