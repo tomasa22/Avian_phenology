@@ -15,29 +15,47 @@
             --text-main: #e6edf3;
             --text-dim: #8b949e;
             --accent: #64ffda;
+            --box-bg: #1c2128;
         }
 
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; display: flex; overflow: hidden; }
         
-        .sidebar { width: 380px; height: 100vh; padding: 40px 35px; background: var(--panel); box-shadow: 4px 0 20px rgba(0,0,0,0.6); z-index: 1000; box-sizing: border-box; overflow-y: auto; }
+        /* The Sidebar */
+        .sidebar { width: 420px; height: 100vh; padding: 40px 35px; background: var(--panel); box-shadow: 4px 0 20px rgba(0,0,0,0.6); z-index: 1000; box-sizing: border-box; overflow-y: auto; }
         
-        h1 { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 600; margin: 0 0 5px 0; line-height: 1.1; }
-        .byline { font-size: 0.8rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; font-weight: 600; }
-        .prose { font-size: 1rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 40px; }
+        h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 600; margin: 0 0 5px 0; line-height: 1.1; }
+        .byline { font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; font-weight: 600; }
         
-        .control-group { margin-bottom: 30px; }
+        /* Species Header */
+        .species-header { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #30363d; }
+        .species-header h2 { font-family: 'Inter', sans-serif; font-size: 1.6rem; font-weight: 600; margin: 0 0 2px 0; color: #fff; }
+        .species-header .scientific { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.1rem; color: var(--text-dim); }
+
+        .prose { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 25px; }
+        
+        /* Methodology Box */
+        .methodology { background: var(--box-bg); padding: 18px; border-radius: 6px; border-left: 3px solid var(--accent); margin-bottom: 35px; }
+        .methodology-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-main); font-weight: 600; margin-bottom: 8px; }
+        .methodology-text { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 10px; }
+        .citation { font-size: 0.75rem; color: #6e7681; line-height: 1.4; border-top: 1px solid #30363d; padding-top: 10px; }
+        .citation a { color: var(--accent); text-decoration: none; }
+        .citation a:hover { text-decoration: underline; }
+
+        /* Controls */
+        .control-group { margin-bottom: 25px; }
         label { display: block; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-        select { width: 100%; padding: 10px; background: var(--bg); color: var(--text-main); border: 1px solid #30363d; border-radius: 4px; font-family: inherit; font-size: 1rem; outline: none; }
+        select { width: 100%; padding: 10px; background: var(--bg); color: var(--text-main); border: 1px solid #30363d; border-radius: 4px; font-family: inherit; font-size: 1rem; outline: none; cursor: pointer; }
         
         #date-display { display: block; font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--text-main); margin-top: 5px; }
         input[type=range] { width: 100%; margin-top: 15px; accent-color: var(--accent); cursor: pointer; }
 
-        /* --- NEW LEGEND STYLES --- */
-        .legend-container { margin-top: 40px; padding-top: 25px; border-top: 1px solid #30363d; }
+        /* Legend */
+        .legend-container { margin-top: 35px; padding-top: 25px; border-top: 1px solid #30363d; }
         .legend-bar { height: 12px; border-radius: 6px; background: linear-gradient(to right, #0d0887, #7e03a8, #cc4678, #f89441, #f0f921); border: 1px solid #30363d; margin-bottom: 8px; }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); font-family: monospace; }
 
-        #map { width: calc(100vw - 380px); height: 100vh; background: #0b0d12; z-index: 1; }
+        /* The Map */
+        #map { width: calc(100vw - 420px); height: 100vh; background: #0b0d12; z-index: 1; }
         
         .leaflet-tooltip { background: var(--panel); color: var(--text-main); border: 1px solid #30363d; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 4px; font-family: 'Inter'; }
         .leaflet-tooltip-top:before { border-top-color: #30363d; }
@@ -46,13 +64,28 @@
 <body>
 
     <div class="sidebar">
-        <h1>The Arrival Wave</h1>
-        <div class="byline">Spatial Phenology in Slovakia</div>
+        <h1>Arrival Phenology</h1>
+        <div class="byline">Spatial Migration in Slovakia</div>
+        
+        <div class="species-header">
+            <h2>Barn Swallow</h2>
+            <div class="scientific">Hirundo rustica</div>
+        </div>
         
         <div class="prose">
-            Watch the migratory front sweep across the landscape. Each marker represents a first detection. 
+            Watch the migratory front sweep across the landscape. Each marker represents a localized first detection. 
             <br><br>
             <span style="color: #fff;">Large dots</span> indicate birds that have arrived within the last 3 days. <span style="color: var(--text-dim); font-size: 0.8em;">Smaller, faded dots are older arrivals.</span>
+        </div>
+
+        <div class="methodology">
+            <div class="methodology-title">Data & Methodology</div>
+            <div class="methodology-text">
+                Observations are sourced from the <strong>eBird Basic Dataset (EBD)</strong>. To ensure rigorous spatial sampling, the data is strictly filtered to include only <em>complete checklists</em>, mitigating variability in observer effort.
+            </div>
+            <div class="citation">
+                Ref: Johnston, A., et al. (2021). Analytical guidelines to increase the value of community science data: An example using eBird data to estimate species distributions. <em>Diversity and Distributions</em>. <a href="https://doi.org/10.1111/ddi.13271" target="_blank">DOI: 10.1111/ddi.13271</a>
+            </div>
         </div>
 
         <div class="control-group">
