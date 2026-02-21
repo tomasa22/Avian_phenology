@@ -20,7 +20,6 @@
 
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; display: flex; overflow: hidden; }
         
-        /* The Sidebar (Desktop Default) */
         .sidebar { width: 420px; height: 100vh; padding: 40px 35px; background: var(--panel); box-shadow: 4px 0 20px rgba(0,0,0,0.6); z-index: 1000; box-sizing: border-box; overflow-y: auto; }
         
         h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 600; margin: 0 0 5px 0; line-height: 1.1; }
@@ -50,33 +49,24 @@
         .legend-bar { height: 12px; border-radius: 6px; background: linear-gradient(to right, #0d0887, #7e03a8, #cc4678, #f89441, #f0f921); border: 1px solid #30363d; margin-bottom: 8px; }
         .legend-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim); font-family: monospace; }
 
-        /* The Map (Desktop Default) */
         #map { width: calc(100vw - 420px); height: 100vh; background: #0b0d12; z-index: 1; }
         
         .leaflet-tooltip { background: var(--panel); color: var(--text-main); border: 1px solid #30363d; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 4px; font-family: 'Inter'; }
         .leaflet-tooltip-top:before { border-top-color: #30363d; }
 
-        /* --- MOBILE OVERRIDES (Screens smaller than 800px) --- */
         @media (max-width: 800px) {
-            body, html { flex-direction: column; } /* Stacks elements vertically */
+            body, html { flex-direction: column; } 
             
-            #map { 
-                width: 100vw; 
-                height: 50vh; /* Map takes top half */
-                order: 1;     /* Forces map to the top */
-            }
+            #map { width: 100vw; height: 50vh; order: 1; }
             
             .sidebar { 
-                width: 100vw; 
-                height: 50vh; /* Sidebar takes bottom half */
-                padding: 25px 20px; 
-                order: 2;     /* Forces sidebar to the bottom */
+                width: 100vw; height: 50vh; padding: 25px 20px; order: 2; 
                 border-top: 2px solid var(--accent);
                 box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
             }
 
             h1 { font-size: 1.8rem; }
-            .legend-labels span { font-size: 0.75rem; white-space: nowrap; } /* Fixes cut-off dates */
+            .legend-labels span { font-size: 0.75rem; white-space: nowrap; } 
         }
     </style>
 </head>
@@ -140,14 +130,12 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <script>
+        // Start with a default view, but we will override this as soon as data loads
         const map = L.map('map', { zoomControl: false }).setView([48.65, 19.7], 8);
         L.control.zoom({ position: 'topright' }).addTo(map);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         }).addTo(map);
-
-        // Tell the map to recalculate its size in case the screen was split
-        setTimeout(() => { map.invalidateSize(); }, 200);
 
         let fullDatabase = {};
         let currentMarkers = [];
@@ -163,9 +151,19 @@
             fetch('multi_species_arrivals.json').then(r => r.json())
         ]).then(([geoData, multiSpeciesData]) => {
             
-            L.geoJSON(geoData, {
+            // 1. Draw the outline and save it to a variable
+            const countryOutline = L.geoJSON(geoData, {
                 style: { color: '#64ffda', weight: 2.5, fillOpacity: 0, opacity: 0.8 }
             }).addTo(map);
+
+            // 2. THE MAGIC FIX: Instantly fit the map perfectly to the outline
+            map.fitBounds(countryOutline.getBounds(), { padding: [15, 15] });
+
+            // 3. Keep it perfect even if the user resizes their window or rotates their phone
+            window.addEventListener('resize', () => {
+                map.invalidateSize();
+                map.fitBounds(countryOutline.getBounds(), { padding: [15, 15] });
+            });
 
             fullDatabase = multiSpeciesData;
 
